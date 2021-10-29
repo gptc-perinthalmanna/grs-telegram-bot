@@ -2,9 +2,10 @@ from typing import List
 from uuid import UUID
 from deta import Deta
 import datetime
-from func import convert_text_to_draft_js_raw
+import json
 
-deta = Deta("c0rmafqp_DcHD6D4eq4eoBTpK9a6b6adA2yvtu4N2")
+
+deta = Deta("c0tzz7m6_bW1MwJ7PVTmAXnKNj4nxUjS1kHc8dx6W")
 telegram_db = deta.Base("telegram_db")
 users_db = deta.Base('users')
 posts_db = deta.Base("posts")
@@ -20,6 +21,8 @@ def set_bot_config(config):
 
 def update_bot_config(key, value):
     config = get_bot_config()
+    if config is None:
+        config = {}
     if isinstance(value, list):
         config[key].append(value)
     elif isinstance(value, dict):
@@ -97,3 +100,24 @@ def create_response_object(user_id, text, response_index, prev_status,  current_
         },
         "visible": True
     }
+
+
+draft_js_template = {
+    "blocks" : [{
+        "key": "110h8",
+        "text": "",
+        "type": "unstyled",
+        "depth": 0,
+        "inlineStyleRanges": [],
+        "entityRanges": [],
+        "data": {}
+    }],
+    "entityMap": {}
+}
+
+
+
+def convert_text_to_draft_js_raw(text: str) -> str:
+    draft_js_raw = draft_js_template
+    draft_js_raw["blocks"][0]["text"] = text
+    return json.dumps(draft_js_raw)

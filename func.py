@@ -1,7 +1,8 @@
-import json
 import telebot
-from main import bot, db
+from db import telegram_db as db
 from uuid import UUID
+
+bot = telebot.TeleBot("2090757545:AAF00DXNp4vj_lxDeugKPG0MHgeb2zJ0kDI", parse_mode=None)
 
 def check_chat_is_connected(message: telebot.types.Message):
     try:
@@ -38,22 +39,3 @@ def is_valid_uuid(val):
         return True
     except ValueError:
         return False
-
-draft_js_template = {
-    "blocks" : [{
-        "key": "110h8",
-        "text": "",
-        "type": "unstyled",
-        "depth": 0,
-        "inlineStyleRanges": [],
-        "entityRanges": [],
-        "data": {}
-    }],
-    "entityMap": {}
-}
-
-def convert_text_to_draft_js_raw(text: str) -> str:
-    draft_js_raw = draft_js_template
-    draft_js_raw["blocks"][0]["text"] = text
-    return json.dumps(draft_js_raw)
-
