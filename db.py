@@ -8,8 +8,6 @@ from deta import Deta
 deta = Deta(config("DETA_TOKEN"))
 telegram_db = deta.Base("telegram_db")
 telegram_user_map_db = deta.Base("telegram_user_map_db")
-users_db = deta.Base('users')
-posts_db = deta.Base("posts")
 
 
 # BOT CONFIGURATION
@@ -35,19 +33,6 @@ def update_bot_config(key, value):
     telegram_db.put(config, "bot_config")
 
 
-# USER DB
-
-def get_user_from_username(username):
-    fetch = users_db.fetch({'username': username}, limit=1)
-    if fetch.count > 0:
-        return fetch.items[0]
-    else:
-        return None
-
-
-def get_user_from_id(user_id):
-    return users_db.get(user_id)
-
 # USERNAME AND TELEGRAM USERID MAP
 
 
@@ -61,17 +46,6 @@ def get_user_from_telegram_user_id(telegram_user_id) -> Optional[Tuple[str, bool
 def put_user_from_telegram_user_id(telegram_user_id, user_id, disabled=True):
     telegram_user_map_db.put(
         {"user_id": user_id, "disabled": disabled}, str(telegram_user_id))
-
-# POST DB
-
-
-def get_post_from_id(post_id):
-    return posts_db.get(UUID(post_id).hex)
-
-
-def put_post_from_id(post_id, post):
-    posts_db.put(post, post_id)
-
 
 # DRAFT JS
 

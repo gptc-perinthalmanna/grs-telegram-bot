@@ -1,14 +1,14 @@
-from typing import Optional
 import telebot
-import datetime
-import os
+from typing import Optional
 from decouple import config
-from db import convert_text_to_draft_js_raw, get_user_from_id, get_user_from_telegram_user_id, telegram_db as db
 from uuid import UUID
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from api import NewResponse, Status
+import api
+from db import convert_text_to_draft_js_raw, get_user_from_telegram_user_id, telegram_db as db
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bot = telebot.TeleBot(config("TG_BOT_TOKEN"), parse_mode=None)
 
 user_types_allowed_to_reply = ["admin", "greivance_cell_member", "staff"]
@@ -54,62 +54,23 @@ def is_valid_uuid(val):
         return False
 
 
-def create_response_object_for_post(post, message: telebot.types.Message, user: dict):
-
-    allowed_statuses = ['draft', 'open', 'replied', 'authorResponded', 'adminResponded',
-                        'closed', 'deleted', 'hidden', 'priorityChanged', 'solved']
-
-    response_model = {
-        "id": 0,
-        "author": "",
-        "content": "str",
-        "statusChange": {
-            "prev": "open",
-            "to": "replied"
-        },
-        "published": "",
-        "modified": "",
-        "deleted": False,
-        "visible": True,
-    }
-
-    # Add Response ID
-    if post["responses"] is None or len(post["responses"]) == 0:
-        response_model["id"] = 1
-    else:
-        response_model["id"] = len(post["responses"]) + 1
-
+def create_response_object_for_post(post_id:str, message: telebot.types.Message, user: dict):
+    new_status = "replied"
+    allowed_statuses = [el.value for el in Status]
     # Fetch change status command from message
     status_command_index = message.text.find("/changestatus")
     if status_command_index != -1:
-        status_command = message.text[status_command_index +
-                                      len("/changestatus"):]
-        if status_command.startswith(" "):
-            status_command = status_command[1:]
+        status_command = message.text[status_command_index + len("/changestatus"):]
+        if status_command.startswith(" "): status_command = status_command[1:]
         for status in allowed_statuses:
             if status_command.startswith(status):
-                response_model["statusChange"]["to"] = status
+                new_status = status
                 break
         else:
-            bot.reply_to(
-                message, "Invalid status change command. Allowed status changes are: " + str(allowed_statuses))
+            bot.reply_to(message, "Invalid status change command. Allowed status changes are: " + str(allowed_statuses))
             return None
-
-    response_model["author"] = user["key"]
-    response_model["statusChange"]["prev"] = post["status"]
-    response_model["content"] = convert_text_to_draft_js_raw(message.text.replace("/reply ", "").replace(f"/changestatus {response_model['statusChange']['to']}", ""))
-    response_model["published"] = datetime.datetime.now().isoformat()
-    response_model["modified"] = datetime.datetime.now().isoformat()
-    return response_model
-
-
-def add_response_to_post(post, response):
-    if post["responses"] is None:
-        post["responses"] = []
-    post["responses"].append(response)
-    post["modified"] = datetime.datetime.now().isoformat()
-    post["status"] = response["statusChange"]["to"]
-    return post
+    content = convert_text_to_draft_js_raw(message.text.replace("/reply ", "").replace(f"/changestatus {new_status}", ""))
+    return NewResponse(post_key=post_id, content=content, status=new_status, user_id=user["key"])
 
 
 def verify_password(user: dict, password: str):
@@ -117,14 +78,12 @@ def verify_password(user: dict, password: str):
 
 
 def check_user_permissions_and_return_user(message: telebot.types.Message) -> dict:
-    user_key, is_user_disabled = get_user_from_telegram_user_id(
-        message.from_user.id)
+    user_key, is_user_disabled = get_user_from_telegram_user_id(message.from_user.id)
     if user_key is None or is_user_disabled is True:
-        bot.reply_to(
-            message, "Your account is not connected with GRS. Send your username after typing /login command")
+        bot.reply_to( message, "Your account is not connected with GRS. Send your username after typing /login command")
         return None
 
-    user = get_user_from_id(user_key)
+    user = api.get_user_from_user_id(user_key)
     if user is None:
         bot.reply_to(message, "Your account is not found in GRS 🛑")
         return None
@@ -134,6 +93,7 @@ def check_user_permissions_and_return_user(message: telebot.types.Message) -> di
         return None
     return user
 
+
 def get_user_from_message(message: telebot.types.Message) -> Optional[dict]:
     user_key, is_disabled = db.get_user_from_telegram_user_id(message.from_user.id)
     if user_key is None:
@@ -141,7 +101,7 @@ def get_user_from_message(message: telebot.types.Message) -> Optional[dict]:
             message, "Your account is not connected with GRS. Send your username after typing /login command")
         return None
     
-    user = db.get_user_from_id(user_key)
+    user = api.get_user_from_user_id(user_key)
     if user is None:
         bot.reply_to(message, "Your account is not found in GRS 🛑")
         return None
