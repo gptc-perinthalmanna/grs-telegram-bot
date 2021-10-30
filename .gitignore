@@ -138,3 +138,6 @@ dmypy.json
 cython_debug/
 __pycache__/db.cpython-39.pyc
 __pycache__/func.cpython-39.pyc
+
+.vscode
+.idea

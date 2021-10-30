@@ -48,7 +48,6 @@ def check_password(message):
     bot.edit_message_text("Password is incorrect! ❌", message.chat.id, msg.message_id)
 
 
-
 @bot.message_handler(commands=['connect'])
 def connect_group(message: telebot.types.Message):
     if func.check_chat_is_connected(message):
@@ -115,11 +114,13 @@ def connect_me(message: telebot.types.Message):
     bot.reply_to(
         message, f"Found your account on GRS ✅ \n Click the @{bot.get_me().username} and Press Start \n Follow instructions to Login")
 
+
 @bot.message_handler(commands=["help"])
 def bot_commands_help(message: telebot.types.Message):
     if not func.check_chat_is_connected(message):
         return
     bot.reply_to(message, "Commands: \n /connect - Connect this chat to the GRS \n /reply - Reply to a post \n /login - Connect your account to the GRS") 
+
 
 @bot.message_handler(func=lambda m: True)
 def reply_all_messages(message):

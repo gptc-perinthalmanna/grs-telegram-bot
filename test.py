@@ -1,2 +1,1 @@
-from decouple import config
-print(config('DETA_TOKEN'))
+# No tests for now.
