@@ -1,6 +1,7 @@
 from deta import Deta
+import os
 
-deta = Deta("c0rmafqp_DcHD6D4eq4eoBTpK9a6b6adA2yvtu4N2")
+deta = Deta(os.environ['DETA_TOKEN'])
 db = deta.Base("telegram_db")
 
 db.put({"connected_chats": "test"}, "bot_config")

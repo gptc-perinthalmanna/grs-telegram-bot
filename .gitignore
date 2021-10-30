@@ -1,2 +1,12 @@
 .venv
 venv
+__pycache__
+*.__pycache__
+*.pyc
+*.pyo
+.coverage
+.cache
+.pytest_cache
+.tox
+.mypy_cache
+.env
