@@ -2,13 +2,11 @@ import telebot
 from typing import Optional
 from decouple import config
 from uuid import UUID
-from passlib.context import CryptContext
 
-from api import NewResponse, Status
 import api
-from db import convert_text_to_draft_js_raw, get_user_from_telegram_user_id, telegram_db as db
+from api import NewResponse, Status
+from db import convert_text_to_draft_js_raw, get_user_from_telegram_user_id, get_bot_config, set_bot_config, telegram_db as db
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bot = telebot.TeleBot(config("TG_BOT_TOKEN"), parse_mode=None)
 
 user_types_allowed_to_reply = ["admin", "greivance_cell_member", "staff"]
@@ -16,14 +14,31 @@ user_types_allowed_to_reply = ["admin", "greivance_cell_member", "staff"]
 
 def check_chat_is_connected(message: telebot.types.Message):
     try:
-        result = db.get("bot_config")
+        result = get_bot_config()
     except Exception as e:
         bot.reply_to(message, "System Error: " + str(e))
         return False
-    if result["connected_chats"] == message.chat.id:
+        
+    if result and result["connected_chats"] and message.chat.id in result["connected_chats"]:
+        bot.reply_to(message, "This chat is already connected to GRS 🤗")
         return True
     bot.reply_to(message, "This chat is not connected to any GRS 🛑")
     return False
+
+
+def connect_this_chat(message: telebot.types.Message):
+    try:
+        result = get_bot_config()
+    except Exception as e:
+        bot.reply_to(message, "System Error: " + str(e))
+        return False
+    if result["connected_chats"] and message.chat.id in result["connected_chats"]:
+        bot.reply_to(message, "This chat is already connected to GRS 🤗")
+        return False
+    result["connected_chats"].append(message.chat.id)
+    set_bot_config(result)
+    bot.reply_to(message, "This chat is now connected to GRS 🤗")
+    return True
 
 
 def get_post_id_if_reply_message_is_post(message: telebot.types.Message) -> bool:
@@ -43,6 +58,10 @@ def get_post_id_if_reply_message_is_post(message: telebot.types.Message) -> bool
     if not is_valid_uuid(post_id):
         bot.reply_to(reply_message, "Invalid post id 🤔")
         return False
+    if not api.is_post_id_exists(post_id):
+        bot.reply_to(reply_message, "This post is not found in GRS 🛑")
+        return False
+
     return post_id
 
 
@@ -73,9 +92,6 @@ def create_response_object_for_post(post_id:str, message: telebot.types.Message,
     return NewResponse(post_key=post_id, content=content, status=new_status, user_id=user["key"])
 
 
-def verify_password(user: dict, password: str):
-    return pwd_context.verify(password, user["hashed_password"])
-
 
 def check_user_permissions_and_return_user(message: telebot.types.Message) -> dict:
     user_key, is_user_disabled = get_user_from_telegram_user_id(message.from_user.id)
@@ -95,14 +111,9 @@ def check_user_permissions_and_return_user(message: telebot.types.Message) -> di
 
 
 def get_user_from_message(message: telebot.types.Message) -> Optional[dict]:
-    user_key, is_disabled = db.get_user_from_telegram_user_id(message.from_user.id)
+    user_key,  = db.get_user_from_telegram_user_id(message.from_user.id)
     if user_key is None:
         bot.reply_to(
             message, "Your account is not connected with GRS. Send your username after typing /login command")
         return None
-    
-    user = api.get_user_from_user_id(user_key)
-    if user is None:
-        bot.reply_to(message, "Your account is not found in GRS 🛑")
-        return None
-    return user
+    return user_key

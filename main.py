@@ -28,52 +28,50 @@ def check_password(message):
         bot.reply_to(message, "This command only supported in Private chats 🛑")
         return
 
-    user = func.get_user_from_message(message)
-    if user is None:
-        return
+    userid = func.get_user_from_message(message)
+    if userid is None: return
+
     password = message.text.split(' ')[1] if len(message.text.split(' ')) > 1 else None
     if password is None:
         bot.reply_to(message, "Please send your password 🔒. Enter your password after /password command. You just sent a blank /password command.")
         return
+
     msg = bot.reply_to(message, "Checking password...")
     time.sleep(5)
-    if func.verify_password(user, password):
-        db.put_user_from_telegram_user_id(
-            message.from_user.id, user["key"], disabled=False)
-        bot.edit_message_text(
-            "Password is correct! ✅ Your account is Logged in ✨", message.chat.id, msg.message_id)
+    if api.get_token(userid, password):
+        db.put_user_from_telegram_user_id(message.from_user.id, userid, disabled=False)
+        bot.edit_message_text("Password is correct! ✅ Your account is Logged in ✨", message.chat.id, msg.message_id)
         return
+
     bot.edit_message_text("Waiting...", message.chat.id, msg.message_id)
     time.sleep(5)
-    bot.edit_message_text(
-        "Password is incorrect! ❌", message.chat.id, msg.message_id)
+    bot.edit_message_text("Password is incorrect! ❌", message.chat.id, msg.message_id)
 
 
 
 @bot.message_handler(commands=['connect'])
 def connect_group(message: telebot.types.Message):
     if func.check_chat_is_connected(message):
-        bot.reply_to(message, "Your chat is already connected with GRS. You can't connect again 🛑")
         return
+
     if message.chat.type == 'private':
         bot.reply_to(message, "This command only supported in Group chats 🛑")
         return
     
     user = func.get_user_from_message(message)
     if user is None:
+        bot.reply_to(message, "Your account is not found in GRS 🛑")
         return
     
     if user["type"] not in ["admin", "staff"]:
         bot.reply_to(message, "Only admins can use this command 🛑")
         return
 
-    chat_id = message.chat.id
     try:
-        db.update_bot_config("connected_chats", chat_id)
-        bot.reply_to(message, "This chat is connected to the GRS ✅")
+        func.connect_this_chat(message)
+        return
     except Exception as e:
-        bot.reply_to(
-            message, "An error occured while connecting the chat. Error: " + str(e))
+        bot.reply_to(message, "An error occured while connecting the chat. Error: " + str(e))
 
 
 @bot.message_handler(commands=["reply"])
@@ -109,13 +107,13 @@ def connect_me(message: telebot.types.Message):
         bot.reply_to(message, "Your account is already connected ✅")
         return
         
-    user = db.get_user_from_username(username)
+    user = api.get_user_from_username(username)
     if user is None:
         bot.reply_to(message, "User not found")
         return
     db.put_user_from_telegram_user_id(message.from_user.id, user["key"])
     bot.reply_to(
-        message, f"Found your account on GRS ✅ \n Click or PM the @{bot.get_me().username} and Press Start \n Follow instructions to Login")
+        message, f"Found your account on GRS ✅ \n Click the @{bot.get_me().username} and Press Start \n Follow instructions to Login")
 
 @bot.message_handler(commands=["help"])
 def bot_commands_help(message: telebot.types.Message):

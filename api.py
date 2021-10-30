@@ -40,6 +40,7 @@ def get_token():
     """
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     response = requests.post(api_endpoint + "/token", data={"username": config("GRS_USERNAME"), "password": config("GRS_PASSWORD")}, headers=headers)
+    if response.status_code != 200: return None
     return response.json()['access_token']
 
 
@@ -49,6 +50,7 @@ def get_user_from_username(username):
     """
     headers = {'Authorization': 'Bearer ' + get_token()}
     response = requests.get(api_endpoint + "/admin/user_from_username/" + username +"/", headers=headers)
+    if response.status_code != 200: return None
     return response.json()
 
 
@@ -58,6 +60,7 @@ def get_user_from_user_id(user_id):
     """
     headers = {'Authorization': 'Bearer ' + get_token()}
     response = requests.get(api_endpoint + "/admin/user/" + user_id +"/", headers=headers)
+    if response.status_code != 200: return None
     return response.json()
 
 
@@ -67,6 +70,7 @@ def get_post_from_id(post_id):
     """
     headers = {'Authorization': 'Bearer ' + get_token()}
     response = requests.get(api_endpoint + "/post/" + post_id +"/", headers=headers)
+    if response.status_code != 200: return None    
     return response.json()
 
 
@@ -75,8 +79,6 @@ def add_new_response_to_post(response: NewResponse):
     Add a new response to a post
     """
     headers = {'Authorization': 'Bearer ' + get_token(), 'Content-Type': 'application/json'}
-
     response = requests.post(api_endpoint + "/posts/response/new/", json=ResponseSerialized(**response.dict()).dict(), headers=headers)
-    if response.status_code != 200:
-        return None
+    if response.status_code != 200: return None
     return response.json()

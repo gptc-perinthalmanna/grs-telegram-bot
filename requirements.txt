@@ -1,5 +1,4 @@
 pyTelegramBotAPI
 deta
-passlib
 python-decouple
 pydantic

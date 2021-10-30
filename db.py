@@ -13,23 +13,13 @@ telegram_user_map_db = deta.Base("telegram_user_map_db")
 # BOT CONFIGURATION
 
 def get_bot_config():
-    return telegram_db.get("bot_config")
+    res = telegram_db.get("bot_config")
+    if res is None:
+        return telegram_db.put({"connected_chats": []}, "bot_config")
+    return res
 
 
 def set_bot_config(config):
-    telegram_db.put(config, "bot_config")
-
-
-def update_bot_config(key, value):
-    config = get_bot_config()
-    if config is None:
-        config = {}
-    if isinstance(value, list):
-        config[key].append(value)
-    elif isinstance(value, dict):
-        config[key].update(value)
-    else:
-        config[key] = value
     telegram_db.put(config, "bot_config")
 
 
