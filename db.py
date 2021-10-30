@@ -1,11 +1,11 @@
 import json
-
+from decouple import config
 from typing import Optional, Tuple
 from uuid import UUID
 from deta import Deta
-import os
 
-deta = Deta(os.getenv("DETA_TOKEN"))
+
+deta = Deta(config("DETA_TOKEN"))
 telegram_db = deta.Base("telegram_db")
 telegram_user_map_db = deta.Base("telegram_user_map_db")
 users_db = deta.Base('users')

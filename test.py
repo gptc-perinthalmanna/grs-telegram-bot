@@ -1,2 +1,2 @@
-message = "/password thisispass "
-print(message.split(' ')[1])
+from decouple import config
+print(config('DETA_TOKEN'))

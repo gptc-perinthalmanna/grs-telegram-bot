@@ -1,10 +1,10 @@
 import telebot
 
-import db, time, os
-from func import add_response_to_post, check_chat_is_connected, check_user_permissions_and_return_user, create_response_object_for_post, get_post_id_if_reply_message_is_post, verify_password
+import db, time
+from decouple import config
+from func import add_response_to_post, check_chat_is_connected, check_user_permissions_and_return_user, create_response_object_for_post, get_post_id_if_reply_message_is_post, get_user_from_message, verify_password
 
-bot = telebot.TeleBot(
-    os.getenv("TG_BOT_TOKEN"), parse_mode=None)
+bot = telebot.TeleBot(config("TG_BOT_TOKEN"), parse_mode=None)
 
 
 @bot.message_handler(commands=['start'])
@@ -32,15 +32,9 @@ def check_password(message):
     if message.chat.type != 'private':
         bot.reply_to(message, "This command only supported in Private chats 🛑")
         return
-    user_key, is_disabled = db.get_user_from_telegram_user_id(message.from_user.id)
-    if user_key is None:
-        bot.reply_to(
-            message, "Your account is not connected with GRS. Send your username after typing /login command")
-        return
-    
-    user = db.get_user_from_id(user_key)
+
+    user = get_user_from_message(message)
     if user is None:
-        bot.reply_to(message, "Your account is not found in GRS 🛑")
         return
     password = message.text.split(' ')[1] if len(message.text.split(' ')) > 1 else None
     if password is None:
@@ -63,6 +57,21 @@ def check_password(message):
 
 @bot.message_handler(commands=['connect'])
 def connect_group(message: telebot.types.Message):
+    if check_chat_is_connected(message):
+        bot.reply_to(message, "Your chat is already connected with GRS. You can't connect again 🛑")
+        return
+    if message.chat.type == 'private':
+        bot.reply_to(message, "This command only supported in Group chats 🛑")
+        return
+    
+    user = get_user_from_message(message)
+    if user is None:
+        return
+    
+    if user["type"] not in ["admin", "staff"]:
+        bot.reply_to(message, "Only admins can use this command 🛑")
+        return
+
     chat_id = message.chat.id
     try:
         db.update_bot_config("connected_chats", chat_id)

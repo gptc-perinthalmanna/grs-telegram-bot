@@ -1,3 +1,4 @@
 pyTelegramBotAPI
 deta
 passlib
+python-decouple

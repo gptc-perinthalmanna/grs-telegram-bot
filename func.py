@@ -1,14 +1,15 @@
+from typing import Optional
 import telebot
 import datetime
 import os
+from decouple import config
 from db import convert_text_to_draft_js_raw, get_user_from_id, get_user_from_telegram_user_id, telegram_db as db
 from uuid import UUID
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-bot = telebot.TeleBot(
-    os.getenv("TG_BOT_TOKEN"), parse_mode=None)
+bot = telebot.TeleBot(config("TG_BOT_TOKEN"), parse_mode=None)
 
 user_types_allowed_to_reply = ["admin", "greivance_cell_member", "staff"]
 
@@ -130,5 +131,18 @@ def check_user_permissions_and_return_user(message: telebot.types.Message) -> di
 
     if user["type"] not in user_types_allowed_to_reply:
         bot.reply_to(message, "You are not allowed to reply to this post 🛑")
+        return None
+    return user
+
+def get_user_from_message(message: telebot.types.Message) -> Optional[dict]:
+    user_key, is_disabled = db.get_user_from_telegram_user_id(message.from_user.id)
+    if user_key is None:
+        bot.reply_to(
+            message, "Your account is not connected with GRS. Send your username after typing /login command")
+        return None
+    
+    user = db.get_user_from_id(user_key)
+    if user is None:
+        bot.reply_to(message, "Your account is not found in GRS 🛑")
         return None
     return user
