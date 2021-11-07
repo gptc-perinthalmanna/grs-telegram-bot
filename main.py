@@ -29,7 +29,9 @@ def check_password(message):
         return
 
     userid = func.get_user_from_message(message)
-    if userid is None: return
+    if userid is None: 
+        bot.reply_to(message, "User Not found!")
+        return
 
     password = message.text.split(' ')[1] if len(message.text.split(' ')) > 1 else None
     if password is None:
@@ -100,7 +102,7 @@ def connect_me(message: telebot.types.Message):
     if message.chat.type != 'private':
         if not func.check_chat_is_connected(message):
             return
-            
+
     username = message.text.replace("/login ", "")
 
     user_id, is_disabled = db.get_user_from_telegram_user_id(message.from_user.id)
