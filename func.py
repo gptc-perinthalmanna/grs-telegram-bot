@@ -24,7 +24,7 @@ def check_chat_is_connected(message: telebot.types.Message, mute:bool = True) ->
         if not mute:
             bot.reply_to(message, "This chat is already connected to GRS 🤗")
         return True
-        
+
     bot.reply_to(message, "This chat is not connected to any GRS 🛑")
     return False
 
@@ -64,7 +64,6 @@ def get_post_id_if_reply_message_is_post(message: telebot.types.Message):
     if not api.is_post_id_exists(post_id):
         bot.reply_to(reply_message, "This post is not found in GRS 🛑")
         return False
-    print(f"POST ID : {str(post_id)}")
     return post_id
 
 
@@ -80,9 +79,9 @@ def create_response_object_for_post(post_id:str, message: telebot.types.Message,
     new_status = "replied"
     allowed_statuses = [el.value for el in Status]
     # Fetch change status command from message
-    status_command_index = message.text.find("/changestatus")
+    status_command_index = message.text.find("/status")
     if status_command_index != -1:
-        status_command = message.text[status_command_index + len("/changestatus"):]
+        status_command = message.text[status_command_index + len("/status"):]
         if status_command.startswith(" "): status_command = status_command[1:]
         for status in allowed_statuses:
             if status_command.startswith(status):
@@ -91,7 +90,7 @@ def create_response_object_for_post(post_id:str, message: telebot.types.Message,
         else:
             bot.reply_to(message, "Invalid status change command. Allowed status changes are: ".join(allowed_statuses))
             return None
-    content = convert_text_to_draft_js_raw(message.text.replace("/reply ", "").replace(f"/changestatus {new_status}", ""))
+    content = convert_text_to_draft_js_raw(message.text.replace("/reply ", "").replace(f"/status {new_status}", ""))
     return NewResponse(post_key=UUID4(post_id), content=content, status=new_status, user_id=user["key"])
 
 
