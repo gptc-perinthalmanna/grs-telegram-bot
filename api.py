@@ -109,6 +109,6 @@ def connect_new_chat(chat_id):
     Connect a new chat
     """
     headers = {'Authorization': 'Bearer ' + get_token()}
-    response = requests.post(api_endpoint + "/admin/connections/telegram/add-chat/" + chat_id +"/", headers=headers)
+    response = requests.post(api_endpoint + "/admin/connections/telegram/add-chat/" + str(chat_id) +"/", headers=headers)
     if response.status_code != 200: return None
     return response.json()
