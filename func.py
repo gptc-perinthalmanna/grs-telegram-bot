@@ -40,6 +40,7 @@ def connect_this_chat(message: telebot.types.Message):
         return False
     result["connected_chats"].append(message.chat.id)
     set_bot_config(result)
+    api.connect_new_chat(message.chat.id)
     bot.reply_to(message, "This chat is now connected to GRS 🤗")
     return True
 
