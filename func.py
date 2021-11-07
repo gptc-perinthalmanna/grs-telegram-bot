@@ -89,7 +89,7 @@ def create_response_object_for_post(post_id:str, message: telebot.types.Message,
                 new_status = status
                 break
         else:
-            bot.reply_to(message, "Invalid status change command. Allowed status changes are: ".join(allowed_statuses))
+            bot.reply_to(message, "Invalid status change command. Allowed status changes are: " + " ".join(allowed_statuses))
             return None
     content = convert_text_to_draft_js_raw(message.text.replace("/reply ", "").replace(f"/status {new_status}", ""))
     return NewResponse(post_key=UUID4(post_id), content=content, status=new_status, user_id=user["key"])
