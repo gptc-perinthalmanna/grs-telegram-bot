@@ -1,3 +1,4 @@
+from pydantic.types import UUID4
 import telebot
 from typing import Optional
 from decouple import config
@@ -12,7 +13,7 @@ bot = telebot.TeleBot(config("TG_BOT_TOKEN"), parse_mode=None)
 user_types_allowed_to_reply = ["admin", "greivance_cell_member", "staff"]
 
 
-def check_chat_is_connected(message: telebot.types.Message):
+def check_chat_is_connected(message: telebot.types.Message, mute:bool = True) -> bool:
     try:
         result = get_bot_config()
     except Exception as e:
@@ -20,8 +21,10 @@ def check_chat_is_connected(message: telebot.types.Message):
         return False
         
     if result and result["connected_chats"] and message.chat.id in result["connected_chats"]:
-        bot.reply_to(message, "This chat is already connected to GRS 🤗")
+        if not mute:
+            bot.reply_to(message, "This chat is already connected to GRS 🤗")
         return True
+        
     bot.reply_to(message, "This chat is not connected to any GRS 🛑")
     return False
 
@@ -41,7 +44,7 @@ def connect_this_chat(message: telebot.types.Message):
     return True
 
 
-def get_post_id_if_reply_message_is_post(message: telebot.types.Message) -> bool:
+def get_post_id_if_reply_message_is_post(message: telebot.types.Message):
     err_msg = "The message you selected for add response is not a grievance. Reply with /reply command for the original greviance notification message send by this bot 🛑"
     reply_message = message.reply_to_message
     if reply_message is None:
@@ -50,18 +53,18 @@ def get_post_id_if_reply_message_is_post(message: telebot.types.Message) -> bool
     if reply_message.from_user.id != bot.get_me().id:
         bot.reply_to(message, "You didn't replied to my post 🤔")
         return False
-    post_id_string_start_index = message.text.find("id: ") + 5
+    post_id_string_start_index = message.text.find("id: ")
     if post_id_string_start_index == "-1":
         bot.reply_to(message, err_msg)
         return False
-    post_id = reply_message.text[post_id_string_start_index:post_id_string_start_index + 36]
+    post_id = reply_message.text[post_id_string_start_index+5:post_id_string_start_index + 5 + 36]
     if not is_valid_uuid(post_id):
         bot.reply_to(reply_message, "Invalid post id 🤔")
         return False
     if not api.is_post_id_exists(post_id):
         bot.reply_to(reply_message, "This post is not found in GRS 🛑")
         return False
-
+    print(f"POST ID : {str(post_id)}")
     return post_id
 
 
@@ -86,10 +89,10 @@ def create_response_object_for_post(post_id:str, message: telebot.types.Message,
                 new_status = status
                 break
         else:
-            bot.reply_to(message, "Invalid status change command. Allowed status changes are: " + str(allowed_statuses))
+            bot.reply_to(message, "Invalid status change command. Allowed status changes are: ".join(allowed_statuses))
             return None
     content = convert_text_to_draft_js_raw(message.text.replace("/reply ", "").replace(f"/changestatus {new_status}", ""))
-    return NewResponse(post_key=post_id, content=content, status=new_status, user_id=user["key"])
+    return NewResponse(post_key=UUID4(post_id), content=content, status=new_status, user_id=user["key"])
 
 
 
@@ -111,7 +114,7 @@ def check_user_permissions_and_return_user(message: telebot.types.Message) -> di
 
 
 def get_user_from_message(message: telebot.types.Message) -> Optional[dict]:
-    user_key,  = db.get_user_from_telegram_user_id(message.from_user.id)
+    user_key, is_disabled = get_user_from_telegram_user_id(message.from_user.id)
     if user_key is None:
         bot.reply_to(
             message, "Your account is not connected with GRS. Send your username after typing /login command")

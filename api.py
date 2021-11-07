@@ -44,6 +44,16 @@ def get_token():
     return response.json()['access_token']
 
 
+def get_other_user_token(username, password):
+    """
+    Get the Authorization token for Bot Admin User
+    """
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    response = requests.post(api_endpoint + "/token", data={"username": username, "password": password}, headers=headers)
+    if response.status_code != 200: return None
+    return response.json()['access_token']
+
+
 def get_user_from_username(username):
     """
     Get the User from username
@@ -82,3 +92,13 @@ def add_new_response_to_post(response: NewResponse):
     response = requests.post(api_endpoint + "/posts/response/new/", json=ResponseSerialized(**response.dict()).dict(), headers=headers)
     if response.status_code != 200: return None
     return response.json()
+
+
+def is_post_id_exists(post_id):
+    """
+    Check if a post_id exists
+    """
+    headers = {'Authorization': 'Bearer ' + get_token()}
+    response = requests.get(api_endpoint + "/posts/" + post_id +"/", headers=headers)
+    if response.status_code != 200: return False
+    return True

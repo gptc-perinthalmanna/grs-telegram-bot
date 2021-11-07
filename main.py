@@ -24,7 +24,7 @@ def send_welcome(message):
 
 @bot.message_handler(commands=['password'])
 def check_password(message):
-    if func.message.chat.type != 'private':
+    if message.chat.type != 'private':
         bot.reply_to(message, "This command only supported in Private chats 🛑")
         return
 
@@ -39,8 +39,9 @@ def check_password(message):
         return
 
     msg = bot.reply_to(message, "Checking password...")
+    user = api.get_user_from_user_id(userid)
     time.sleep(5)
-    if api.get_token(userid, password):
+    if api.get_other_user_token(user['username'], password):
         db.put_user_from_telegram_user_id(message.from_user.id, userid, disabled=False)
         bot.edit_message_text("Password is correct! ✅ Your account is Logged in ✨", message.chat.id, msg.message_id)
         return
@@ -52,14 +53,19 @@ def check_password(message):
 
 @bot.message_handler(commands=['connect'])
 def connect_group(message: telebot.types.Message):
-    if func.check_chat_is_connected(message):
+    if func.check_chat_is_connected(message, False):
         return
 
     if message.chat.type == 'private':
         bot.reply_to(message, "This command only supported in Group chats 🛑")
         return
     
-    user = func.get_user_from_message(message)
+    user_key = func.get_user_from_message(message)
+    if user_key is None:
+        bot.reply_to(message, "Your account is not found in GRS 🛑")
+        return
+    
+    user = api.get_user_from_user_id(user_key)
     if user is None:
         bot.reply_to(message, "Your account is not found in GRS 🛑")
         return
