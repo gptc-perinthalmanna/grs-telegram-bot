@@ -97,8 +97,10 @@ def reply_post(message: telebot.types.Message):
 
 @bot.message_handler(commands=["login"])
 def connect_me(message: telebot.types.Message):
-    if not func.check_chat_is_connected(message):
-        return
+    if message.chat.type != 'private':
+        if not func.check_chat_is_connected(message):
+            return
+            
     username = message.text.replace("/login ", "")
 
     user_id, is_disabled = db.get_user_from_telegram_user_id(message.from_user.id)
