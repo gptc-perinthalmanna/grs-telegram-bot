@@ -10,7 +10,7 @@ from db import convert_text_to_draft_js_raw, get_user_from_telegram_user_id, get
 
 bot = telebot.TeleBot(config("TG_BOT_TOKEN"), parse_mode=None)
 
-user_types_allowed_to_reply = ["admin", "greivance_cell_member", "staff"]
+user_types_allowed_to_reply = ["admin", "greivance_cell_member"]
 
 
 def check_chat_is_connected(message: telebot.types.Message, mute:bool = True) -> bool:
